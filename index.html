@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Complaint Prioritization System</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <script>
+
+        tailwind.config = {
+
+            theme: {
+
+                extend: {
+
+                    colors: {
+
+                        navy: "#08111f",
+                        panel: "#0d1b2a",
+                        cyan: "#00aaff",
+                        green: "#00ff99"
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    </script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #050b14;
+            color: white;
+
+        }
+
+
+        .glass {
+
+            background: rgba(13, 27, 42, 0.88);
+
+            backdrop-filter: blur(15px);
+
+            border: 1px solid rgba(0, 170, 255, 0.18);
+
+        }
+
+
+        .glow {
+
+            box-shadow:
+                0 0 15px rgba(0, 170, 255, 0.18),
+                0 0 40px rgba(0, 170, 255, 0.05);
+
+        }
+
+
+        .green-glow {
+
+            box-shadow:
+                0 0 15px rgba(0, 255, 153, 0.18);
+
+        }
+
+
+        .page {
+
+            display: none;
+
+        }
+
+
+        .page.active {
+
+            display: block;
+
+        }
+
+
+        .tab {
+
+            transition: .2s;
+
+        }
+
+
+        .tab.active {
+
+            background: #0284c7;
+
+            color: white;
+
+        }
+
+
+        .priority {
+
+            display: inline-block;
+
+            padding: 5px 11px;
+
+            border-radius: 999px;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+        }
+
+
+        .light {
+
+            color: #38bdf8;
+
+            background: rgba(56,189,248,.12);
+
+            border: 1px solid rgba(56,189,248,.25);
+
+        }
+
+
+        .medium {
+
+            color: #facc15;
+
+            background: rgba(250,204,21,.12);
+
+            border: 1px solid rgba(250,204,21,.25);
+
+        }
+
+
+        .critical {
+
+            color: #f87171;
+
+            background: rgba(248,113,113,.12);
+
+            border: 1px solid rgba(248,113,113,.25);
+
+        }
+
+
+        .status {
+
+            display: inline-block;
+
+            padding: 5px 10px;
+
+            border-radius: 999px;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+        }
+
+
+        .unsolved {
+
+            color: #f87171;
+
+            background: rgba(248,113,113,.12);
+
+        }
+
+
+        .ongoing {
+
+            color: #facc15;
+
+            background: rgba(250,204,21,.12);
+
+        }
+
+
+        .resolved {
+
+            color: #4ade80;
+
+            background: rgba(74,222,128,.12);
+
+        }
+
+
+        .input {
+
+            width: 100%;
+
+            background: #07111e;
+
+            border: 1px solid #263548;
+
+            border-radius: 12px;
+
+            padding: 13px 15px;
+
+            color: white;
+
+            outline: none;
+
+        }
+
+
+        .input:focus {
+
+            border-color: #0ea5e9;
+
+            box-shadow: 0 0 0 2px rgba(14,165,233,.1);
+
+        }
+
+
+        select.input option {
+
+            background: #07111e;
+
+        }
+
+
+        .admin-card {
+
+            transition: .2s;
+
+        }
+
+
+        .admin-card:hover {
+
+            transform: translateY(-3px);
+
+        }
+
+
+        @media(max-width:768px) {
+
+            .desktop-only {
+
+                display: none;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ========================================================= -->
+<!-- GLOBAL HEADER -->
+<!-- ========================================================= -->
+
+<header class="border-b border-slate-800 bg-[#08111f] sticky top-0 z-50">
+
+    <div class="max-w-7xl mx-auto px-5 py-4
+                flex items-center justify-between">
+
+        <!-- Logo -->
+
+        <div class="flex items-center gap-4">
+
+            <div class="w-11 h-11 rounded-xl
+                        bg-sky-500/10
+                        border border-sky-500/30
+                        flex items-center justify-center">
+
+                <i class="fa-solid fa-brain text-sky-400 text-xl"></i>
+
+            </div>
+
+
+            <div>
+
+                <h1 class="font-bold text-lg">
+
+                    AI Complaint Prioritization
+
+                </h1>
+
+                <p id="portalText"
+                   class="text-xs text-slate-400">
+
+                    User Portal
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- Navigation -->
+
+        <div class="flex items-center gap-2">
+
+            <button onclick="showUserPage()"
+                    id="userNav"
+                    class="px-4 py-2 rounded-lg
+                           bg-sky-500/10
+                           border border-sky-500/30
+                           text-sky-300">
+
+                <i class="fa-solid fa-user mr-2"></i>
+
+                User
+
+            </button>
+
+
+            <button onclick="showAdminPage()"
+                    id="adminNav"
+                    class="px-4 py-2 rounded-lg
+                           bg-purple-500/10
+                           border border-purple-500/30
+                           text-purple-300">
+
+                <i class="fa-solid fa-user-shield mr-2"></i>
+
+                Admin
+
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<!-- ========================================================= -->
+<!-- USER PAGE -->
+<!-- ========================================================= -->
+
+<section id="userPage" class="page active">
+
+    <main class="max-w-7xl mx-auto px-5 py-8">
+
+
+        <!-- USER TABS -->
+
+        <div class="flex gap-2 mb-7">
+
+            <button id="newComplaintTab"
+                    onclick="showUserTab('new')"
+                    class="tab active
+                           px-5 py-3
+                           rounded-xl
+                           font-semibold">
+
+                <i class="fa-solid fa-plus mr-2"></i>
+
+                New Complaint
+
+            </button>
+
+
+            <button id="trackTab"
+                    onclick="showUserTab('track')"
+                    class="tab
+                           px-5 py-3
+                           rounded-xl
+                           font-semibold
+                           text-slate-300">
+
+                <i class="fa-solid fa-magnifying-glass mr-2"></i>
+
+                Track Ticket
+
+            </button>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- NEW COMPLAINT -->
+        <!-- ================================================= -->
+
+        <div id="newComplaintPage">
+
+
+            <div class="grid lg:grid-cols-3 gap-6">
+
+
+                <!-- FORM -->
+
+                <div class="lg:col-span-2">
+
+                    <div class="glass rounded-2xl p-6 glow">
+
+
+                        <div class="mb-6">
+
+                            <h2 class="text-2xl font-bold">
+
+                                Submit a Complaint
+
+                            </h2>
+
+                            <p class="text-sm text-slate-400 mt-1">
+
+                                AI analyzes your complaint and
+                                automatically assigns a priority.
+
+                            </p>
+
+                        </div>
+
+
+
+                        <form id="complaintForm">
+
+
+                            <!-- NAME -->
+
+                            <div class="mb-5">
+
+                                <label class="block text-sm
+                                              font-semibold mb-2">
+
+                                    <i class="fa-solid fa-user
+                                              text-sky-400 mr-2"></i>
+
+                                    Your Name
+
+                                </label>
+
+
+                                <input
+                                    id="name"
+                                    class="input"
+                                    type="text"
+                                    placeholder="Enter your name"
+                                    required>
+
+                            </div>
+
+
+
+                            <!-- EMAIL -->
+
+                            <div class="mb-5">
+
+                                <label class="block text-sm
+                                              font-semibold mb-2">
+
+                                    <i class="fa-solid fa-envelope
+                                              text-sky-400 mr-2"></i>
+
+                                    Email
+
+                                </label>
+
+
+                                <input
+                                    id="email"
+                                    class="input"
+                                    type="email"
+                                    placeholder="example@gmail.com"
+                                    required>
+
+                            </div>
+
+
+
+                            <!-- CATEGORY -->
+
+                            <div class="mb-5">
+
+                                <label class="block text-sm
+                                              font-semibold mb-2">
+
+                                    <i class="fa-solid fa-layer-group
+                                              text-sky-400 mr-2"></i>
+
+                                    Category
+
+                                </label>
+
+
+                                <select
+                                    id="category"
+                                    class="input"
+                                    required>
+
+                                    <option value="">
+                                        Select Category
+                                    </option>
+
+                                    <option value="General">
+                                        General
+                                    </option>
+
+                                    <option value="Billing">
+                                        Billing / Payment
+                                    </option>
+
+                                    <option value="Technical">
+                                        Technical
+                                    </option>
+
+                                    <option value="Security">
+                                        Security
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+
+                            <!-- MESSAGE -->
+
+                            <div class="mb-5">
+
+                                <label class="block text-sm
+                                              font-semibold mb-2">
+
+                                    <i class="fa-solid fa-message
+                                              text-sky-400 mr-2"></i>
+
+                                    Complaint Details
+
+                                </label>
+
+
+                                <textarea
+                                    id="message"
+                                    rows="7"
+                                    class="input"
+                                    placeholder="Describe your complaint..."
+                                    required></textarea>
+
+                            </div>
+
+
+
+                            <!-- SUBMIT -->
+
+                            <button
+                                id="submitButton"
+                                type="submit"
+                                class="w-full py-4 rounded-xl
+                                       bg-gradient-to-r
+                                       from-sky-600
+                                       to-blue-600
+                                       hover:from-sky-500
+                                       hover:to-blue-500
+                                       font-bold">
+
+                                <i class="fa-solid fa-robot mr-2"></i>
+
+                                Analyze & Prioritize Complaint
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+
+                    <!-- SUCCESS -->
+
+                    <div id="successCard"
+                         class="hidden mt-6
+                                glass rounded-2xl p-6
+                                border border-green-500/30
+                                green-glow">
+
+                        <div class="flex items-center gap-4">
+
+                            <div class="w-12 h-12 rounded-full
+                                        bg-green-500/10
+                                        flex items-center justify-center">
+
+                                <i class="fa-solid fa-check
+                                          text-green-400 text-xl"></i>
+
+                            </div>
+
+
+                            <div>
+
+                                <h3 class="font-bold text-lg">
+
+                                    Complaint Submitted
+
+                                </h3>
+
+                                <p class="text-sm text-slate-400">
+
+                                    Save your ticket ID.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="mt-5
+                                    p-4
+                                    rounded-xl
+                                    bg-black/20">
+
+                            <p class="text-xs text-slate-400">
+
+                                TICKET ID
+
+                            </p>
+
+
+                            <div class="flex justify-between
+                                        items-center">
+
+                                <span id="ticketID"
+                                      class="font-mono
+                                             text-green-400
+                                             text-xl">
+
+                                </span>
+
+
+                                <button onclick="copyTicket()"
+                                        class="px-3 py-2
+                                               rounded-lg
+                                               bg-slate-700">
+
+                                    <i class="fa-solid fa-copy"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- METRICS -->
+
+                <div class="space-y-5">
+
+
+                    <!-- TOTAL -->
+
+                    <div class="glass rounded-2xl p-5">
+
+                        <p class="text-sm text-slate-400">
+
+                            Total Complaints
+
+                        </p>
+
+                        <p id="userTotal"
+                           class="text-3xl font-bold mt-2">
+
+                            0
+
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- CRITICAL -->
+
+                    <div class="glass rounded-2xl p-5">
+
+                        <p class="text-sm text-slate-400">
+
+                            Critical Complaints
+
+                        </p>
+
+                        <p id="userCritical"
+                           class="text-3xl font-bold
+                                  text-red-400 mt-2">
+
+                            0
+
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- OPEN -->
+
+                    <div class="glass rounded-2xl p-5">
+
+                        <p class="text-sm text-slate-400">
+
+                            Open Complaints
+
+                        </p>
+
+                        <p id="userOpen"
+                           class="text-3xl font-bold
+                                  text-yellow-400 mt-2">
+
+                            0
+
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- AI -->
+
+                    <div class="glass rounded-2xl p-5">
+
+                        <div class="flex items-center gap-3 mb-4">
+
+                            <i class="fa-solid fa-microchip
+                                      text-green-400 text-xl"></i>
+
+                            <h3 class="font-bold">
+
+                                AI Analysis
+
+                            </h3>
+
+                        </div>
+
+
+                        <ul class="text-sm text-slate-400 space-y-3">
+
+                            <li>
+                                <i class="fa-solid fa-check
+                                          text-green-400 mr-2"></i>
+                                Category Detection
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check
+                                          text-green-400 mr-2"></i>
+                                Urgency Detection
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check
+                                          text-green-400 mr-2"></i>
+                                Priority Assignment
+                            </li>
+
+                            <li>
+                                <i class="fa-solid fa-check
+                                          text-green-400 mr-2"></i>
+                                Ticket Generation
+                            </li>
+
+                        </ul>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- QUEUE -->
+
+            <div class="mt-8">
+
+                <h2 class="text-xl font-bold mb-4">
+
+                    Complaint Queue
+
+                </h2>
+
+
+                <div id="complaintQueue"
+                     class="space-y-4">
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- TRACK PAGE -->
+        <!-- ================================================= -->
+
+        <div id="trackPage"
+             class="hidden">
+
+            <div class="max-w-3xl mx-auto">
+
+                <div class="glass rounded-2xl p-6 glow">
+
+                    <h2 class="text-2xl font-bold mb-2">
+
+                        Track Your Complaint
+
+                    </h2>
+
+
+                    <p class="text-sm text-slate-400 mb-6">
+
+                        Enter your ticket ID.
+
+                    </p>
+
+
+                    <div class="flex gap-3">
+
+                        <input
+                            id="trackInput"
+                            class="input"
+                            placeholder="CMP-12345678">
+
+
+                        <button onclick="trackComplaint()"
+                                class="px-6 rounded-xl
+                                       bg-sky-600
+                                       hover:bg-sky-500">
+
+                            Track
+
+                        </button>
+
+                    </div>
+
+
+                    <div id="trackResult"
+                         class="hidden mt-6">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</section>
+
+
+
+<!-- ========================================================= -->
+<!-- ADMIN LOGIN PAGE -->
+<!-- ========================================================= -->
+
+<section id="adminLoginPage"
+         class="page">
+
+    <div class="min-h-[calc(100vh-75px)]
+                flex items-center
+                justify-center
+                px-5">
+
+
+        <div class="glass rounded-2xl
+                    p-8
+                    w-full max-w-md
+                    glow">
+
+
+            <div class="text-center mb-7">
+
+                <div class="w-16 h-16
+                            mx-auto
+                            rounded-2xl
+                            bg-purple-500/10
+                            border border-purple-500/30
+                            flex items-center justify-center">
+
+                    <i class="fa-solid fa-user-shield
+                              text-purple-400
+                              text-2xl"></i>
+
+                </div>
+
+
+                <h2 class="text-2xl
+                           font-bold
+                           mt-4">
+
+                    Admin Login
+
+                </h2>
+
+
+                <p class="text-sm text-slate-400">
+
+                    Authorized personnel only
+
+                </p>
+
+            </div>
+
+
+
+            <form id="adminLoginForm">
+
+
+                <div class="mb-5">
+
+                    <label class="block text-sm
+                                  font-semibold mb-2">
+
+                        Admin Name
+
+                    </label>
+
+
+                    <input
+                        id="adminName"
+                        class="input"
+                        placeholder="ADMIN"
+                        required>
+
+                </div>
+
+
+
+                <div class="mb-5">
+
+                    <label class="block text-sm
+                                  font-semibold mb-2">
+
+                        Password
+
+                    </label>
+
+
+                    <input
+                        id="adminPassword"
+                        class="input"
+                        type="password"
+                        placeholder="Enter password"
+                        required>
+
+                </div>
+
+
+                <p id="loginError"
+                   class="hidden text-red-400
+                          text-sm mb-4">
+
+                    Invalid admin credentials.
+
+                </p>
+
+
+                <button
+                    type="submit"
+                    class="w-full py-3
+                           rounded-xl
+                           bg-purple-600
+                           hover:bg-purple-500
+                           font-bold">
+
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+
+                    Login
+
+                </button>
+
+            </form>
+
+
+            <div class="mt-5
+                        text-center
+                        text-xs
+                        text-slate-500">
+
+                Demo credentials:
+
+                <span class="text-purple-400">
+                    ADMIN / admin1234
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================================================= -->
+<!-- ADMIN DASHBOARD -->
+<!-- ========================================================= -->
+
+<section id="adminPage"
+         class="page">
+
+    <main class="max-w-7xl mx-auto px-5 py-8">
+
+
+        <!-- ADMIN HEADER -->
+
+        <div class="flex flex-col
+                    md:flex-row
+                    md:items-center
+                    justify-between
+                    gap-4 mb-8">
+
+
+            <div>
+
+                <p class="text-purple-400
+                          text-sm
+                          font-semibold">
+
+                    ADMINISTRATOR
+
+                </p>
+
+
+                <h2 class="text-3xl font-bold">
+
+                    Complaint Dashboard
+
+                </h2>
+
+
+                <p class="text-sm
+                          text-slate-400
+                          mt-1">
+
+                    Monitor and manage all complaints.
+
+                </p>
+
+            </div>
+
+
+            <button onclick="adminLogout()"
+                    class="px-5 py-3
+                           rounded-xl
+                           bg-red-500/10
+                           border border-red-500/30
+                           text-red-400
+                           hover:bg-red-500/20">
+
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>
+
+                Logout
+
+            </button>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- ADMIN METRICS -->
+        <!-- ================================================= -->
+
+        <div class="grid
+                    grid-cols-2
+                    md:grid-cols-4
+                    lg:grid-cols-7
+                    gap-4 mb-8">
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Total
+
+                </p>
+
+                <p id="adminTotal"
+                   class="text-2xl font-bold mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Light
+
+                </p>
+
+                <p id="adminLight"
+                   class="text-2xl font-bold
+                          text-sky-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Medium
+
+                </p>
+
+                <p id="adminMedium"
+                   class="text-2xl font-bold
+                          text-yellow-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Critical
+
+                </p>
+
+                <p id="adminCritical"
+                   class="text-2xl font-bold
+                          text-red-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Resolved
+
+                </p>
+
+                <p id="adminResolved"
+                   class="text-2xl font-bold
+                          text-green-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Ongoing
+
+                </p>
+
+                <p id="adminOngoing"
+                   class="text-2xl font-bold
+                          text-yellow-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+
+            <div class="admin-card glass rounded-xl p-4">
+
+                <p class="text-xs text-slate-400">
+
+                    Unsolved
+
+                </p>
+
+                <p id="adminUnsolved"
+                   class="text-2xl font-bold
+                          text-red-400 mt-2">
+
+                    0
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- ADMIN TABLE -->
+        <!-- ================================================= -->
+
+        <div class="glass rounded-2xl overflow-hidden">
+
+
+            <div class="p-5
+                        border-b
+                        border-slate-800
+                        flex justify-between
+                        items-center">
+
+
+                <div>
+
+                    <h3 class="text-xl font-bold">
+
+                        Complaint Management
+
+                    </h3>
+
+                    <p class="text-sm
+                              text-slate-400">
+
+                        Update complaint status.
+
+                    </p>
+
+                </div>
+
+
+                <button onclick="loadAdminDashboard()"
+                        class="px-4 py-2
+                               rounded-lg
+                               bg-slate-800
+                               hover:bg-slate-700">
+
+                    <i class="fa-solid fa-rotate"></i>
+
+                </button>
+
+            </div>
+
+
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full text-sm">
+
+                    <thead class="bg-black/20">
+
+                        <tr>
+
+                            <th class="text-left p-4">
+                                Ticket
+                            </th>
+
+                            <th class="text-left p-4">
+                                User
+                            </th>
+
+                            <th class="text-left p-4">
+                                Category
+                            </th>
+
+                            <th class="text-left p-4">
+                                Priority
+                            </th>
+
+                            <th class="text-left p-4">
+                                Complaint
+                            </th>
+
+                            <th class="text-left p-4">
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="adminTable">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</section>
+
+
+
+<!-- ========================================================= -->
+<!-- JAVASCRIPT -->
+<!-- ========================================================= -->
+
+<script>
+
+
+/* =========================================================
+   STORAGE
+========================================================= */
+
+const STORAGE_KEY = "ai_complaints_single_page";
+
+
+function getComplaints() {
+
+    return JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "[]"
+    );
+
+}
+
+
+function saveComplaints(data) {
+
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(data)
+    );
+
+}
+
+
+
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
+
+function hideAllPages() {
+
+    document
+        .querySelectorAll(".page")
+        .forEach(page => {
+
+            page.classList.remove("active");
+
+        });
+
+}
+
+
+function showUserPage() {
+
+    hideAllPages();
+
+    document
+        .getElementById("userPage")
+        .classList.add("active");
+
+    document
+        .getElementById("portalText")
+        .textContent = "User Portal";
+
+    loadUserData();
+
+}
+
+
+function showAdminPage() {
+
+    hideAllPages();
+
+
+    const loggedIn =
+        sessionStorage.getItem("adminLoggedIn");
+
+
+    if (loggedIn === "true") {
+
+        document
+            .getElementById("adminPage")
+            .classList.add("active");
+
+        document
+            .getElementById("portalText")
+            .textContent = "Administrator Portal";
+
+        loadAdminDashboard();
+
+    }
+
+    else {
+
+        document
+            .getElementById("adminLoginPage")
+            .classList.add("active");
+
+        document
+            .getElementById("portalText")
+            .textContent = "Admin Login";
+
+    }
+
+}
+
+
+
+/* =========================================================
+   USER TABS
+========================================================= */
+
+function showUserTab(tab) {
+
+    const newPage =
+        document.getElementById("newComplaintPage");
+
+    const trackPage =
+        document.getElementById("trackPage");
+
+    const newTab =
+        document.getElementById("newComplaintTab");
+
+    const trackTab =
+        document.getElementById("trackTab");
+
+
+    if (tab === "new") {
+
+        newPage.classList.remove("hidden");
+
+        trackPage.classList.add("hidden");
+
+        newTab.classList.add("active");
+
+        trackTab.classList.remove("active");
+
+    }
+
+    else {
+
+        newPage.classList.add("hidden");
+
+        trackPage.classList.remove("hidden");
+
+        trackTab.classList.add("active");
+
+        newTab.classList.remove("active");
+
+    }
+
+}
+
+
+
+/* =========================================================
+   AI PRIORITY ENGINE
+========================================================= */
+
+function determinePriority(category, message) {
+
+    const text =
+        message.toLowerCase();
+
+
+    const criticalKeywords = [
+
+        "hack",
+        "hacked",
+        "fraud",
+        "stolen",
+        "attack",
+        "breach",
+        "danger",
+        "critical",
+        "emergency",
+        "urgent",
+        "unauthorized",
+        "security",
+        "threat"
+
+    ];
+
+
+    const mediumKeywords = [
+
+        "outage",
+        "refund",
+        "failed",
+        "failure",
+        "problem",
+        "issue",
+        "error",
+        "payment",
+        "not working"
+
+    ];
+
+
+    if (
+        category === "Security" ||
+        criticalKeywords.some(
+            word => text.includes(word)
+        )
+    ) {
+
+        return "Critical";
+
+    }
+
+
+    if (
+        category === "Technical" ||
+        category === "Billing" ||
+        mediumKeywords.some(
+            word => text.includes(word)
+        )
+    ) {
+
+        return "Medium";
+
+    }
+
+
+    return "Light";
+
+}
+
+
+
+/* =========================================================
+   AI EXPLANATION
+========================================================= */
+
+function generateInsight(priority) {
+
+    if (priority === "Critical") {
+
+        return "AI detected a potentially high-impact or urgent issue requiring immediate attention.";
+
+    }
+
+
+    if (priority === "Medium") {
+
+        return "AI detected an operational issue that should be reviewed soon.";
+
+    }
+
+
+    return "AI classified this complaint as lower urgency.";
+
+}
+
+
+
+/* =========================================================
+   GENERATE TICKET
+========================================================= */
+
+function generateTicket() {
+
+    return "CMP-" +
+        Date.now()
+            .toString()
+            .slice(-8);
+
+}
+
+
+
+/* =========================================================
+   USER SUBMISSION
+========================================================= */
+
+document
+    .getElementById("complaintForm")
+    .addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+
+            const name =
+                document
+                    .getElementById("name")
+                    .value
+                    .trim();
+
+
+            const email =
+                document
+                    .getElementById("email")
+                    .value
+                    .trim();
+
+
+            const category =
+                document
+                    .getElementById("category")
+                    .value;
+
+
+            const message =
+                document
+                    .getElementById("message")
+                    .value
+                    .trim();
+
+
+            const priority =
+                determinePriority(
+                    category,
+                    message
+                );
+
+
+            const complaint = {
+
+                id: generateTicket(),
+
+                name: name,
+
+                email: email,
+
+                category: category,
+
+                message: message,
+
+                priority: priority,
+
+                status: "Unsolved",
+
+                insight:
+                    generateInsight(priority),
+
+                createdAt:
+                    new Date().toLocaleString()
+
+            };
+
+
+            const complaints =
+                getComplaints();
+
+
+            complaints.unshift(
+                complaint
+            );
+
+
+            saveComplaints(
+                complaints
+            );
+
+
+            document
+                .getElementById("ticketID")
+                .textContent =
+                complaint.id;
+
+
+            document
+                .getElementById("successCard")
+                .classList.remove("hidden");
+
+
+            document
+                .getElementById("complaintForm")
+                .reset();
+
+
+            loadUserData();
+
+        }
+    );
+
+
+
+/* =========================================================
+   USER DATA
+========================================================= */
+
+function loadUserData() {
+
+    const complaints =
+        getComplaints();
+
+
+    const queue =
+        document
+            .getElementById("complaintQueue");
+
+
+    queue.innerHTML = "";
+
+
+    complaints.forEach(c => {
+
+
+        const priorityClass =
+            c.priority === "Critical"
+                ? "critical"
+                : c.priority === "Medium"
+                    ? "medium"
+                    : "light";
+
+
+        const statusClass =
+            c.status === "Resolved"
+                ? "resolved"
+                : c.status === "Ongoing"
+                    ? "ongoing"
+                    : "unsolved";
+
+
+        queue.innerHTML += `
+
+            <div class="glass rounded-2xl p-5">
+
+                <div class="flex
+                            flex-col
+                            md:flex-row
+                            justify-between
+                            gap-4">
+
+
+                    <div class="flex-1">
+
+
+                        <div class="flex
+                                    flex-wrap
+                                    gap-2
+                                    items-center
+                                    mb-3">
+
+
+                            <span class="font-mono
+                                         text-sky-400
+                                         text-sm">
+
+                                ${c.id}
+
+                            </span>
+
+
+                            <span class="priority ${priorityClass}">
+
+                                ${c.priority}
+
+                            </span>
+
+
+                            <span class="status ${statusClass}">
+
+                                ${c.status}
+
+                            </span>
+
+                        </div>
+
+
+                        <h3 class="font-bold mb-2">
+
+                            ${escapeHTML(c.category)}
+
+                        </h3>
+
+
+                        <p class="text-sm
+                                  text-slate-300">
+
+                            ${escapeHTML(c.message)}
+
+                        </p>
+
+
+                        <p class="text-xs
+                                  text-slate-500
+                                  mt-3">
+
+                            ${escapeHTML(c.name)}
+                            •
+                            ${c.createdAt}
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="md:w-72
+                                rounded-xl
+                                bg-black/20
+                                p-4">
+
+
+                        <p class="text-xs
+                                  text-green-400
+                                  font-bold
+                                  mb-2">
+
+                            <i class="fa-solid fa-robot mr-1"></i>
+
+                            AI INSIGHT
+
+                        </p>
+
+
+                        <p class="text-xs
+                                  text-slate-400">
+
+                            ${c.insight}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    updateUserMetrics();
+
+}
+
+
+
+/* =========================================================
+   USER METRICS
+========================================================= */
+
+function updateUserMetrics() {
+
+    const complaints =
+        getComplaints();
+
+
+    const critical =
+        complaints.filter(
+            c => c.priority === "Critical"
+        ).length;
+
+
+    const open =
+        complaints.filter(
+            c => c.status !== "Resolved"
+        ).length;
+
+
+    document
+        .getElementById("userTotal")
+        .textContent =
+        complaints.length;
+
+
+    document
+        .getElementById("userCritical")
+        .textContent =
+        critical;
+
+
+    document
+        .getElementById("userOpen")
+        .textContent =
+        open;
+
+}
+
+
+
+/* =========================================================
+   TRACK TICKET
+========================================================= */
+
+function trackComplaint() {
+
+    const id =
+        document
+            .getElementById("trackInput")
+            .value
+            .trim()
+            .toUpperCase();
+
+
+    const result =
+        document
+            .getElementById("trackResult");
+
+
+    const complaints =
+        getComplaints();
+
+
+    const complaint =
+        complaints.find(
+            c => c.id === id
+        );
+
+
+    result.classList.remove("hidden");
+
+
+    if (!complaint) {
+
+        result.innerHTML = `
+
+            <div class="rounded-xl
+                        p-5
+                        bg-red-500/10
+                        border border-red-500/30
+                        text-red-400">
+
+                <i class="fa-solid
+                          fa-circle-exclamation
+                          mr-2"></i>
+
+                Ticket not found.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    result.innerHTML = `
+
+        <div class="rounded-xl
+                    bg-black/20
+                    p-5">
+
+
+            <div class="flex
+                        justify-between
+                        mb-5">
+
+
+                <div>
+
+                    <p class="text-xs
+                              text-slate-500">
+
+                        TICKET ID
+
+                    </p>
+
+
+                    <p class="font-mono
+                              text-sky-400">
+
+                        ${complaint.id}
+
+                    </p>
+
+                </div>
+
+
+                <span class="status
+                    ${
+                        complaint.status === "Resolved"
+                        ? "resolved"
+                        : complaint.status === "Ongoing"
+                            ? "ongoing"
+                            : "unsolved"
+                    }">
+
+                    ${complaint.status}
+
+                </span>
+
+            </div>
+
+
+            <p class="text-sm text-slate-400">
+
+                Priority
+
+            </p>
+
+
+            <p class="font-bold mb-4">
+
+                ${complaint.priority}
+
+            </p>
+
+
+            <p class="text-sm text-slate-400">
+
+                Complaint
+
+            </p>
+
+
+            <p class="text-slate-300 mb-5">
+
+                ${escapeHTML(complaint.message)}
+
+            </p>
+
+
+            <div class="p-4
+                        rounded-xl
+                        bg-green-500/5
+                        border border-green-500/20">
+
+
+                <p class="text-green-400
+                          text-sm
+                          font-bold">
+
+                    AI ANALYSIS
+
+                </p>
+
+
+                <p class="text-sm
+                          text-slate-400
+                          mt-1">
+
+                    ${complaint.insight}
+
+                </p>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+
+/* =========================================================
+   COPY TICKET
+========================================================= */
+
+function copyTicket() {
+
+    const ticket =
+        document
+            .getElementById("ticketID")
+            .textContent;
+
+
+    navigator.clipboard.writeText(
+        ticket
+    );
+
+
+    alert(
+        "Ticket ID copied: " + ticket
+    );
+
+}
+
+
+
+/* =========================================================
+   ADMIN LOGIN
+========================================================= */
+
+document
+    .getElementById("adminLoginForm")
+    .addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+
+            const name =
+                document
+                    .getElementById("adminName")
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById("adminPassword")
+                    .value;
+
+
+            if (
+                name === "ADMIN" &&
+                password === "admin1234"
+            ) {
+
+
+                sessionStorage.setItem(
+                    "adminLoggedIn",
+                    "true"
+                );
+
+
+                showAdminPage();
+
+
+            }
+
+            else {
+
+                document
+                    .getElementById("loginError")
+                    .classList
+                    .remove("hidden");
+
+            }
+
+        }
+    );
+
+
+
+/* =========================================================
+   ADMIN DASHBOARD
+========================================================= */
+
+function loadAdminDashboard() {
+
+    const complaints =
+        getComplaints();
+
+
+    const total =
+        complaints.length;
+
+
+    const light =
+        complaints.filter(
+            c => c.priority === "Light"
+        ).length;
+
+
+    const medium =
+        complaints.filter(
+            c => c.priority === "Medium"
+        ).length;
+
+
+    const critical =
+        complaints.filter(
+            c => c.priority === "Critical"
+        ).length;
+
+
+    const resolved =
+        complaints.filter(
+            c => c.status === "Resolved"
+        ).length;
+
+
+    const ongoing =
+        complaints.filter(
+            c => c.status === "Ongoing"
+        ).length;
+
+
+    const unsolved =
+        complaints.filter(
+            c => c.status === "Unsolved"
+        ).length;
+
+
+    document.getElementById("adminTotal")
+        .textContent = total;
+
+
+    document.getElementById("adminLight")
+        .textContent = light;
+
+
+    document.getElementById("adminMedium")
+        .textContent = medium;
+
+
+    document.getElementById("adminCritical")
+        .textContent = critical;
+
+
+    document.getElementById("adminResolved")
+        .textContent = resolved;
+
+
+    document.getElementById("adminOngoing")
+        .textContent = ongoing;
+
+
+    document.getElementById("adminUnsolved")
+        .textContent = unsolved;
+
+
+
+    renderAdminTable(
+        complaints
+    );
+
+}
+
+
+
+/* =========================================================
+   ADMIN TABLE
+========================================================= */
+
+function renderAdminTable(complaints) {
+
+    const table =
+        document.getElementById("adminTable");
+
+
+    table.innerHTML = "";
+
+
+    if (complaints.length === 0) {
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td colspan="6"
+                    class="text-center
+                           text-slate-500
+                           p-10">
+
+                    No complaints available.
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    complaints.forEach(c => {
+
+
+        const priorityClass =
+            c.priority === "Critical"
+                ? "critical"
+                : c.priority === "Medium"
+                    ? "medium"
+                    : "light";
+
+
+        table.innerHTML += `
+
+            <tr class="border-t
+                       border-slate-800
+                       hover:bg-white/[0.02]">
+
+
+                <td class="p-4
+                           font-mono
+                           text-sky-400">
+
+                    ${c.id}
+
+                </td>
+
+
+                <td class="p-4">
+
+                    <div class="font-semibold">
+
+                        ${escapeHTML(c.name)}
+
+                    </div>
+
+                    <div class="text-xs
+                                text-slate-500">
+
+                        ${escapeHTML(c.email)}
+
+                    </div>
+
+                </td>
+
+
+                <td class="p-4">
+
+                    ${escapeHTML(c.category)}
+
+                </td>
+
+
+                <td class="p-4">
+
+                    <span class="priority ${priorityClass}">
+
+                        ${c.priority}
+
+                    </span>
+
+                </td>
+
+
+                <td class="p-4 max-w-xs">
+
+                    <p class="truncate"
+                       title="${escapeHTML(c.message)}">
+
+                        ${escapeHTML(c.message)}
+
+                    </p>
+
+                </td>
+
+
+                <td class="p-4">
+
+                    <select
+                        onchange="changeStatus('${c.id}', this.value)"
+                        class="bg-[#07111e]
+                               border
+                               border-slate-700
+                               rounded-lg
+                               px-3
+                               py-2
+                               text-sm">
+
+
+                        <option
+                            value="Unsolved"
+                            ${c.status === "Unsolved"
+                                ? "selected"
+                                : ""}>
+
+                            Unsolved
+
+                        </option>
+
+
+                        <option
+                            value="Ongoing"
+                            ${c.status === "Ongoing"
+                                ? "selected"
+                                : ""}>
+
+                            Ongoing
+
+                        </option>
+
+
+                        <option
+                            value="Resolved"
+                            ${c.status === "Resolved"
+                                ? "selected"
+                                : ""}>
+
+                            Resolved
+
+                        </option>
+
+                    </select>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+}
+
+
+
+/* =========================================================
+   CHANGE STATUS
+========================================================= */
+
+function changeStatus(id, status) {
+
+    const complaints =
+        getComplaints();
+
+
+    const complaint =
+        complaints.find(
+            c => c.id === id
+        );
+
+
+    if (complaint) {
+
+        complaint.status =
+            status;
+
+        saveComplaints(
+            complaints
+        );
+
+        loadAdminDashboard();
+
+        loadUserData();
+
+    }
+
+}
+
+
+
+/* =========================================================
+   ADMIN LOGOUT
+========================================================= */
+
+function adminLogout() {
+
+    sessionStorage.removeItem(
+        "adminLoggedIn"
+    );
+
+
+    showUserPage();
+
+}
+
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(value) {
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
+
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+loadUserData();
+
+
+</script>
+
+
+</body>
+
+</html>
